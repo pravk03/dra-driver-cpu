@@ -230,6 +230,41 @@ func TestBuildPublishesScalarNUMANodeAttribute(t *testing.T) {
 	}
 }
 
+func TestBuildNUMANodeSpanningSocketsHasStableSocketID(t *testing.T) {
+	details := cpuinfo.CPUDetails{}
+	for cpu := range 8 {
+		details[cpu] = cpuinfo.CPUInfo{
+			CpuID:          cpu,
+			CoreID:         cpu,
+			SocketID:       cpu / 4,
+			NUMANodeID:     0,
+			NumaNodeCPUSet: cpuset.New(0, 1, 2, 3, 4, 5, 6, 7),
+			SiblingCPUID:   -1,
+		}
+	}
+	topo := &cpuinfo.CPUTopology{
+		NumCPUs: 8, NumCores: 8, NumSockets: 2, NumNUMANodes: 1,
+		SMTEnabled: false, CPUDetails: details,
+	}
+
+	for range 50 {
+		res, err := device.Build(device.BuildInput{
+			Inventory: device.Inventory{
+				CPUTopology:  topo,
+				ReservedCPUs: cpuset.New(),
+			},
+			Layout:         device.LayoutNUMANode,
+			PCIeRootMapper: store.NewPCIeRootMapper(),
+		})
+		require.NoError(t, err)
+		require.Len(t, res.Devices, 1)
+
+		socketID := res.Devices[0].Attributes[device.AttributeSocketID]
+		require.NotNil(t, socketID.IntValue)
+		require.Equal(t, int64(0), *socketID.IntValue)
+	}
+}
+
 func TestBuildValidatesDeviceAttributeValueCount(t *testing.T) {
 	topo := &cpuinfo.CPUTopology{
 		NumCPUs: 1,

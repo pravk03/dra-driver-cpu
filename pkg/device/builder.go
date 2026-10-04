@@ -239,12 +239,12 @@ func groupedCPUDeviceInfos(layout Layout, machine Inventory) []groupedCPUDeviceI
 				continue
 			}
 
-			// All CPUs in a NUMA node belong to the same socket.
-			anyCPU := allocatableCPUs.UnsortedList()[0]
+			// Use the lowest CPU so the socketID is stable when a NUMA node spans sockets.
+			firstCPU := allocatableCPUs.List()[0]
 			devices = append(devices, groupedCPUDeviceInfo{
 				name:       fmt.Sprintf("%s%03d", CPUDeviceNUMAGroupedPrefix, numaID),
 				cpus:       allocatableCPUs,
-				socketID:   topo.CPUDetails[anyCPU].SocketID,
+				socketID:   topo.CPUDetails[firstCPU].SocketID,
 				numaNodeID: numaID,
 			})
 		}
