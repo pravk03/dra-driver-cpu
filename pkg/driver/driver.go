@@ -382,6 +382,8 @@ func (cp *CPUDriver) Start(ctx context.Context) (<-chan error, error) {
 		}
 	}()
 
+	go cp.checkCPUReservation(ctx)
+
 	// publish available resources
 	go cp.PublishResources(ctx)
 
